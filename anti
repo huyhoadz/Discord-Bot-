@@ -1,0 +1,77 @@
+import discord
+from discord.ext import commands
+import datetime
+
+# Cấu hình quyền hạn tối đa cho bot
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix='.', intents=intents)
+
+# Cấu hình ngưỡng bảo vệ
+SPAM_THRESHOLD = 5      # Số tin nhắn tối đa
+SPAM_INTERVAL = 10      # Trong vòng 10 giây
+MASS_BAN_THRESHOLD = 3  # Số người bị ban trong thời gian ngắn để kích hoạt Anti-Nuke
+
+# Bộ nhớ tạm để theo dõi hành vi
+user_messages = {}
+admin_actions = {}
+
+@bot.event
+async def on_ready():
+    print(f'🛡️ Hệ thống bảo mật đã kích hoạt: {bot.user.name}')
+
+    # --- CHỨC NĂNG 1: ANTI-SPAM CỰC MẠNH ---
+    @bot.event
+    async def on_message(message):
+        if message.author.bot or message.guild is None:
+                return
+
+                    author_id = message.author.id
+                        now = datetime.datetime.now()
+
+                            if author_id not in user_messages:
+                                    user_messages[author_id] = []
+
+                                        # Lưu vết tin nhắn
+                                            user_messages[author_id].append(now)
+
+                                                # Lọc bỏ các tin nhắn cũ hơn khoảng thời gian quy định
+                                                    user_messages[author_id] = [msg_time for msg_time in user_messages[author_id] 
+                                                                                    if (now - msg_time).total_seconds() < SPAM_INTERVAL]
+
+                                                                                        # Kiểm tra nếu vượt quá ngưỡng spam
+                                                                                            if len(user_messages[author_id]) > SPAM_THRESHOLD:
+                                                                                                    try:
+                                                                                                                await message.author.timeout(datetime.timedelta(minutes=10), reason="Spamming")
+                                                                                                                            await message.channel.purge(limit=SPAM_THRESHOLD, check=lambda m: m.author == message.author)
+                                                                                                                                        await message.channel.send(f"🚫 {message.author.mention} đã bị mute 10 phút vì spam!")
+                                                                                                                                                except discord.Forbidden:
+                                                                                                                                                            print("Không đủ quyền để mute thành viên.")
+
+                                                                                                                                                                await bot.process_commands(message)
+
+                                                                                                                                                                # --- CHỨC NĂNG 2: ANTI-NUKE (Chống phá hoại từ Admin/Bot lạ) ---
+                                                                                                                                                                @bot.event
+                                                                                                                                                                async def on_member_ban(guild, user):
+                                                                                                                                                                    # Theo dõi xem ai là người thực hiện lệnh ban
+                                                                                                                                                                        async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.ban):
+                                                                                                                                                                                admin = entry.user
+                                                                                                                                                                                        
+                                                                                                                                                                                                if admin.id not in admin_actions:
+                                                                                                                                                                                                            admin_actions[admin.id] = []
+                                                                                                                                                                                                                    
+                                                                                                                                                                                                                            admin_actions[admin.id].append(datetime.datetime.now())
+
+                                                                                                                                                                                                                                    # Nếu một admin ban quá nhiều người trong thời gian ngắn
+                                                                                                                                                                                                                                            if len(admin_actions[admin.id]) > MASS_BAN_THRESHOLD:
+                                                                                                                                                                                                                                                        # Thu hồi toàn bộ quyền của Admin đó (xóa bỏ role cao nhất)
+                                                                                                                                                                                                                                                                    for role in admin.roles:
+                                                                                                                                                                                                                                                                                    if role.permissions.administrator or role.permissions.ban_members:
+                                                                                                                                                                                                                                                                                                        try:
+                                                                                                                                                                                                                                                                                                                                await admin.remove_roles(role, reason="Kích hoạt chế độ Anti-Nuke: Ban hàng loạt")
+                                                                                                                                                                                                                                                                                                                                                    except:
+                                                                                                                                                                                                                                                                                                                                                                            pass
+                                                                                                                                                                                                                                                                                                                                                                                        await guild.owner.send(f"⚠️ CẢNH BÁO: {admin.name} đang có dấu hiệu nuke server!")
+
+                                                                                                                                                                                                                                                                                                                                                                                        # Chạy bot với Token của bạn
+                                                                                                                                                                                                                                                                                                                                                                                        # bot.run('YOUR_TOKEN_HERE')
+                                                                                                                                                                                                                                                                                                                                                                                        
