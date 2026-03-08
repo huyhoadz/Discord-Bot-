@@ -1,0 +1,85 @@
+@bot.command()
+async def raid(ctx):
+ if ctx.author.guild_permissions.administrator:
+  await ctx.send('Raid started!')
+   tasks = []
+
+    # Spam messages in multiple channels
+     for channel in ctx.guild.text_channels:
+      tasks.append(asyncio.create_task(spam_messages(channel)))
+
+       # Change server settings
+        tasks.append(asyncio.create_task(change_server_settings(ctx.guild)))
+
+         # Create and delete channels
+          tasks.append(asyncio.create_task(create_delete_channels(ctx.guild)))
+
+           # Role spamming
+            tasks.append(asyncio.create_task(role_spamming(ctx.guild)))
+
+             # Webhook spamming
+              tasks.append(asyncio.create_task(webhook_spamming(ctx.guild)))
+
+               # Voice channel disruption
+                tasks.append(asyncio.create_task(voice_channel_disruption(ctx.guild)))
+
+                 # Nitro boost spam
+                  tasks.append(asyncio.create_task(nitro_boost_spam(ctx.guild)))
+
+                   # Emoji spamming
+                    tasks.append(asyncio.create_task(emoji_spamming(ctx.guild)))
+
+                     # Bot spawning
+                      tasks.append(asyncio.create_task(bot_spawning(ctx)))
+
+                       await asyncio.gather(*tasks)
+                        else:
+                         await ctx.send('You do not have permission to use this command.')
+
+                         async def spam_messages(channel):
+                          for _ in range(10):
+                           if await rate_limiter.acquire():
+                            await channel.send('Raid message!')
+                             else:
+                              await asyncio.sleep(1) # Wait before retrying
+
+                              async def change_server_settings(guild):
+                               await guild.edit(name='Raided Server', reason='Raid')
+                                await guild.edit.icon(url='https://example.com/icon.png') # Replace with a valid URL
+
+                                async def create_delete_channels(guild):
+                                 for i in range(10):
+                                  new_channel = await guild.create_text_channel(f'raid-channel-{i}')
+                                   await asyncio.sleep(1)
+                                    await new_channel.delete()
+
+                                    async def role_spamming(guild):
+                                     for i in range(20):
+                                      await guild.create_role(name=f'Raid Role {i}')
+
+                                      async def webhook_spamming(guild):
+                                       for channel in guild.text_channels:
+                                        webhook = await channel.create_webhook(name='Raid Webhook')
+                                         for _ in range(5):
+                                          if await rate_limiter.acquire():
+                                           await webhook.send('Raid message from webhook!')
+                                            else:
+                                             await asyncio.sleep(1) # Wait before retrying
+                                              await webhook.delete()
+
+                                              async def voice_channel_disruption(guild):
+                                               for member in guild.members:
+                                                if member.voice:
+                                                 await member.move_to(None) # Move to AFK channel or disrupt their voice channel
+
+                                                 async def nitro_boost_spam(guild):
+                                                  for _ in range(5):
+                                                   await guild.edit(premium_subscription_count=5) # Simulate nitro boosts
+
+                                                   async def emoji_spamming(guild):
+                                                    for i in range(50):
+                                                     await guild.create_custom_emoji(name=f'raid_emoji_{i}', image=None) # Replace with a valid image URL
+
+                                                     async def bot_spawning(ctx):
+                                                      invite_link = discord.utils.oauth_url(bot.user.id, permissions=discord.Permissions.administrator)
+                                                       await ctx.send(f'Invite link for spawning more bots: {invite_link}')
