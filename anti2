@@ -1,0 +1,61 @@
+import discord
+from discord.ext import commands
+import datetime
+
+# Cấu hình cơ bản
+TOKEN = 'YOUR_BOT_TOKEN_HERE'
+WHITELIST_IDS = [123456789012345678, 876543210987654321] # ID của chủ sở hữu
+
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+async def de-rank(guild, user_id):
+    """Hàm thu hồi tất cả role của kẻ tấn công"""
+        member = guild.get_member(user_id)
+            if member and member.top_role < guild.me.top_role:
+                    try:
+                                # Xóa tất cả các role có thể gây hại
+                                            await member.edit(roles=[], reason="Anti-Nuke: Phát hiện hành vi phá hoại")
+                                                        print(f"Đã hạ quyền: {member.display_name}")
+                                                                except Exception as e:
+                                                                            print(f"Lỗi khi hạ quyền: {e}")
+
+                                                                            @bot.event
+                                                                            async def on_ready():
+                                                                                print(f'Bot đã sẵn sàng: {bot.user.name}')
+
+                                                                                # 1. Chống xóa kênh (Anti Channel Delete)
+                                                                                @bot.event
+                                                                                async def on_guild_channel_delete(channel):
+                                                                                    guild = channel.guild
+                                                                                        async for entry in guild.audit_logs(action=discord.AuditLogAction.channel_delete, limit=1):
+                                                                                                user = entry.user
+                                                                                                        
+                                                                                                                if user.id not in WHITELIST_IDS and user.id != bot.user.id:
+                                                                                                                            # Thực hiện trừng phạt
+                                                                                                                                        await de-rank(guild, user.id)
+                                                                                                                                                    # Khôi phục kênh (tùy chọn)
+                                                                                                                                                                await channel.clone(reason="Anti-Nuke: Khôi phục kênh bị xóa trái phép")
+
+                                                                                                                                                                # 2. Chống Ban hàng loạt (Anti Mass Ban)
+                                                                                                                                                                @bot.event
+                                                                                                                                                                async def on_member_ban(guild, user):
+                                                                                                                                                                    async for entry in guild.audit_logs(action=discord.AuditLogAction.ban, limit=1):
+                                                                                                                                                                            admin = entry.user
+                                                                                                                                                                                    
+                                                                                                                                                                                            if admin.id not in WHITELIST_IDS and admin.id != bot.user.id:
+                                                                                                                                                                                                        await de-rank(guild, admin.id)
+                                                                                                                                                                                                                    await guild.unban(user, reason="Anti-Nuke: Giải lệnh ban trái phép")
+
+                                                                                                                                                                                                                    # 3. Chống xóa Role (Anti Role Delete)
+                                                                                                                                                                                                                    @bot.event
+                                                                                                                                                                                                                    async def on_guild_role_delete(role):
+                                                                                                                                                                                                                        guild = role.guild
+                                                                                                                                                                                                                            async for entry in guild.audit_logs(action=discord.AuditLogAction.role_delete, limit=1):
+                                                                                                                                                                                                                                    user = entry.user
+                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                    if user.id not in WHITELIST_IDS:
+                                                                                                                                                                                                                                                                await de-rank(guild, user.id)
+
+                                                                                                                                                                                                                                                                bot.run(TOKEN)
+                                                                                                                                                                                                                                                                
